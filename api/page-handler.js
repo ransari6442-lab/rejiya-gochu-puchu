@@ -38,6 +38,23 @@ export default async function handler(req, res) {
     return res.status(403).send('<h2 style="font-family:sans-serif;text-align:center;margin-top:50px;color:red;">This page has been suspended by Administrator.</h2>');
   }
 
+  // Page View Tracker
+  if (action === 'track_view' && req.method === 'POST') {
+    const { ad_name } = req.body || {};
+    await sbFetch('saas_requests', {
+      method: 'POST',
+      body: JSON.stringify([{
+        page_slug: slug,
+        ad_name: (ad_name || 'Direct').slice(0, 40),
+        user_telegram_id: 0,
+        user_full_name: '__VIEW__',
+        user_username: 'PageView'
+      }])
+    });
+    return res.status(200).json({ ok: true });
+  }
+
+  // Telegram Join Request Webhook
   if (webhook === '1' && req.method === 'POST') {
     const update = req.body;
     if (update && update.chat_join_request) {
@@ -76,6 +93,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
+  // Dynamic Invite Link Generator
   if (action === 'get_invite' && req.method === 'POST') {
     const { ad_name } = req.body || {};
     const safeAd = (ad_name || 'Direct').slice(0, 28);
@@ -160,6 +178,12 @@ export default async function handler(req, res) {
     });
     const params = new URLSearchParams(window.location.search);
     const adName = params.get('ad') || 'Direct';
+
+    // Record Page View
+    fetch('/api/page-handler?slug=${slug}&action=track_view', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ad_name: adName })
+    }).catch(() => {});
 
     async function handleJoin() {
       const btn = document.getElementById('joinBtn');
