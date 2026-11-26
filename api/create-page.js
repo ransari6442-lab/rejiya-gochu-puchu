@@ -9,8 +9,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const {
-    license_key,
-    slug,
+    owner_name,
     bot_token,
     channel_id,
     channel_title,
@@ -21,29 +20,20 @@ export default async function handler(req, res) {
     theme_id
   } = req.body;
 
-  if (!license_key || !slug || !bot_token || !channel_id || !pixel_id || !capi_token) {
+  if (!bot_token || !channel_id || !pixel_id || !capi_token) {
     return res.status(400).json({ error: 'सभी फ़ील्ड भरना अनिवार्य है!' });
   }
 
-  const cleanSlug = slug.toLowerCase().trim().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
-  if (cleanSlug.length < 3) {
-    return res.status(400).json({ error: 'पेज का नाम कम से कम 3 अक्षरों का रखें।' });
-  }
+  // Channel ke username ya title se automatic clean link banayein
+  const baseName = (channel_username && channel_username !== 'Private Channel')
+    ? channel_username.replace('@', '')
+    : (channel_title || 'channel');
+
+  let cleanSlug = baseName.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  if (cleanSlug.length < 3) cleanSlug = 'channel';
 
   try {
-    const { data: keyData, error: keyErr } = await supabase
-      .from('saas_keys')
-      .select('*')
-      .eq('key_code', license_key.trim())
-      .single();
-
-    if (keyErr || !keyData) {
-      return res.status(403).json({ error: 'गलत Activation Key! एडमिन से सही Key लें।' });
-    }
-    if (keyData.status !== 'unused') {
-      return res.status(403).json({ error: 'यह Activation Key पहले ही इस्तेमाल हो चुकी है या ब्लॉक है।' });
-    }
-
+    // Agar same naam ka link pehle se bana ho to aage random number jod dein
     const { data: existingPage } = await supabase
       .from('saas_pages')
       .select('slug')
@@ -51,15 +41,23 @@ export default async function handler(req, res) {
       .single();
 
     if (existingPage) {
-      return res.status(400).json({ error: 'यह लिंक नाम पहले से बुक है, कोई दूसरा नाम चुनें।' });
+      cleanSlug = `${cleanSlug}-${Math.floor(100 + Math.random() * 900)}`;
     }
 
     const randomPin = Math.floor(1000 + Math.random() * 9000);
     const dashboardPass = `RJ-${randomPin}`;
+    const autoKey = `AUTO-${Date.now()}`;
+
+    await supabase.from('saas_keys').insert([{
+      key_code: autoKey,
+      buyer_name: (owner_name || channel_title || 'User').trim(),
+      assigned_slug: cleanSlug,
+      status: 'active'
+    }]);
 
     const { error: insertErr } = await supabase.from('saas_pages').insert([{
       slug: cleanSlug,
-      license_key: license_key.trim(),
+      license_key: autoKey,
       bot_token: bot_token.trim(),
       channel_id: channel_id.trim(),
       channel_title,
@@ -74,11 +72,6 @@ export default async function handler(req, res) {
     if (insertErr) {
       return res.status(500).json({ error: 'पेज सेव करने में समस्या आई: ' + insertErr.message });
     }
-
-    await supabase
-      .from('saas_keys')
-      .update({ status: 'active', assigned_slug: cleanSlug })
-      .eq('key_code', license_key.trim());
 
     const host = req.headers.host;
     const webhookUrl = `https://${host}/webhook/${cleanSlug}`;
