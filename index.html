@@ -1,1 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Learning Page Generator — Zero Fake Click SaaS</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #1b0b3b 0%, #060312 75%);
+      color: #fff;
+      padding: 24px 16px 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .header { text-align: center; margin-bottom: 24px; }
+    .header h1 {
+      font-size: 36px; font-weight: 900; letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #ffffff 35%, #fbbf24 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 25px rgba(139, 92, 246, 0.4);
+    }
+    .sub-pill {
+      display: inline-block; margin-top: 8px; padding: 6px 22px;
+      border-radius: 30px; font-size: 13px; font-weight: 700;
+      background: linear-gradient(90deg, #ec4899, #3b82f6);
+      box-shadow: 0 0 20px rgba(236, 72, 153, 0.5);
+    }
+    .form-box {
+      width: 100%; max-width: 460px;
+      background: rgba(15, 10, 36, 0.85);
+      border: 2px solid #8b5cf6;
+      border-radius: 26px;
+      padding: 24px 20px;
+      box-shadow: 0 0 35px rgba(139, 92, 246, 0.35), inset 0 0 20px rgba(59, 130, 246, 0.15);
+    }
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 14px; font-weight: 700; margin-bottom: 6px; color: #e2e8f0;
+    }
+    .field input {
+      width: 100%; padding: 13px 15px;
+      border-radius: 14px; border: 1.5px solid #3b82f688;
+      background: rgba(9, 6, 24, 0.9); color: #fff; font-size: 14px;
+      outline: none; transition: 0.2s;
+    }
+    .field input:focus { border-color: #38bdf8; box-shadow: 0 0 12px rgba(56, 189, 248, 0.4); }
+    .btn-neon {
+      width: 100%; padding: 16px; margin-top: 8px;
+      border: none; border-radius: 50px;
+      background: linear-gradient(90deg, #ec4899 0%, #8b5cf6 50%, #06b6d4 100%);
+      color: #fff; font-size: 18px; font-weight: 800; cursor: pointer;
+      box-shadow: 0 8px 25px rgba(236, 72, 153, 0.5);
+      transition: transform 0.2s;
+    }
+    .btn-neon:active { transform: scale(0.98); }
 
+    /* 8 Themes Grid */
+    #themeSection { width: 100%; max-width: 1050px; margin-top: 36px; display: none; }
+    .sec-title { text-align: center; font-size: 22px; font-weight: 800; margin-bottom: 6px; color: #38bdf8; }
+    .sec-sub { text-align: center; font-size: 13px; color: #94a3b8; margin-bottom: 22px; }
+    .themes-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px;
+    }
+    .phone-card {
+      border-radius: 26px; padding: 22px 14px; text-align: center;
+      border: 3px solid transparent; cursor: pointer; position: relative;
+      transition: transform 0.2s, border-color 0.2s;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+    }
+    .phone-card:hover { transform: translateY(-4px); }
+    .phone-card.selected { border-color: #22c55e; box-shadow: 0 0 25px rgba(34, 197, 94, 0.6); }
+    .phone-card .tag {
+      position: absolute; top: 10px; right: 12px; font-size: 10px;
+      background: rgba(0,0,0,0.55); color: #fff; padding: 3px 8px; border-radius: 10px;
+    }
+    .p-dp {
+      width: 76px; height: 76px; border-radius: 50%; margin: 10px auto 12px;
+      object-fit: cover; border: 2.5px solid #fff;
+    }
+    .p-title { font-size: 16px; font-weight: 800; margin-bottom: 6px; }
+    .p-desc { font-size: 11px; opacity: 0.8; margin-bottom: 14px; }
+    .p-btn {
+      display: inline-block; width: 90%; padding: 10px; border-radius: 30px;
+      font-size: 12px; font-weight: 700; color: #fff;
+    }
+    .variant-label { text-align: center; margin-top: 8px; font-size: 13px; font-weight: 700; color: #e2e8f0; }
+
+    /* Result Box */
+    #resultBox {
+      width: 100%; max-width: 520px; margin-top: 30px; display: none;
+      background: #0f172a; border: 2px solid #22c55e; border-radius: 22px; padding: 24px;
+    }
+    .res-item { margin-bottom: 16px; }
+    .res-item label { font-size: 12px; color: #94a3b8; display: block; margin-bottom: 4px; }
+    .copy-row { display: flex; gap: 8px; }
+    .copy-row input {
+      flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #334155;
+      background: #1e293b; color: #38bdf8; font-size: 13px; font-weight: 600;
+    }
+    .copy-btn {
+      padding: 10px 14px; border-radius: 10px; border: none;
+      background: #22c55e; color: #052e16; font-weight: 800; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>🎓 Learning Page</h1>
+    <div class="sub-pill">— Setup Your Details —</div>
+  </div>
+
+  <div class="form-box">
+    <div class="field">
+      <label>🔑 Activation Key (Buy Access)</label>
+      <input type="text" id="licenseKey" placeholder="Enter your Activation Key...">
+    </div>
+    <div class="field">
+      <label>✏️ Custom Link Name (Slug)</label>
+      <input type="text" id="pageSlug" placeholder="e.g. ziya-malik (no spaces)">
+    </div>
+    <div class="field">
+      <label>🤖 Bot API Token</label>
+      <input type="text" id="botToken" placeholder="Paste your Telegram bot token...">
+    </div>
+    <div class="field">
+      <label>✈️ Channel ID (Bot must be Admin)</label>
+      <input type="text" id="channelId" placeholder="e.g. -1001234567890 or @username">
+    </div>
+    <div class="field">
+      <label>♾️ Meta Pixel ID</label>
+      <input type="text" id="pixelId" placeholder="Enter your Meta Pixel ID...">
+    </div>
+    <div class="field">
+      <label>🛡️ Meta CAPI Token</label>
+      <input type="text" id="capiToken" placeholder="Enter your Meta CAPI Token...">
+    </div>
+    <button id="fetchBtn" class="btn-neon" onclick="fetchThemes()">⚡ Generate Preview &gt;</button>
+  </div>
+
+  <!-- 8 Themes Selection Section -->
+  <div id="themeSection">
+    <div class="sec-title">✨ Apni Pasand ki Theme Select Karein (8 Variants)</div>
+    <div class="sec-sub">Channel DP aur Naam automatically fetch ho chuka hai — kisi ek card par click karein</div>
+    <div class="themes-grid" id="themesGrid"></div>
+    <div style="max-width:440px;margin:26px auto 0;">
+      <button id="finalBtn" class="btn-neon" onclick="finalGenerate()">🚀 Final Generate Links & Password</button>
+    </div>
+  </div>
+
+  <!-- Final Generated Links & Password -->
+  <div id="resultBox">
+    <h3 style="color:#22c55e;margin-bottom:14px;">✅ Aapka Zero Fake Click System Ready Hai!</h3>
+    <div class="res-item">
+      <label>1️⃣ Custom Ad Landing Page Link (Meta Ads mein lagayein):</label>
+      <div class="copy-row">
+        <input type="text" id="outLanding" readonly>
+        <button class="copy-btn" onclick="copyText('outLanding')">Copy</button>
+      </div>
+    </div>
+    <div class="res-item">
+      <label>2️⃣ Private Analytics Dashboard Link (Today, Yesterday, 30 Days & Ad Report):</label>
+      <div class="copy-row">
+        <input type="text" id="outDash" readonly>
+        <button class="copy-btn" onclick="copyText('outDash')">Copy</button>
+      </div>
+    </div>
+    <div class="res-item">
+      <label>🔐 Auto-Generated Dashboard Password (Ise save kar lein):</label>
+      <div class="copy-row">
+        <input type="text" id="outPass" readonly style="color:#fbbf24;font-size:16px;">
+        <button class="copy-btn" onclick="copyText('outPass')">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let fetchedChannel = null;
+    let selectedTheme = 1;
+
+    const THEME_STYLES = [
+      { id: 1, label: 'Variant 1: Modern Red', bg: 'radial-gradient(circle at top, #5c0a14, #0d0204)', btn: '#e11d48', text: '#fff', ring: '#ff2a4b' },
+      { id: 2, label: 'Variant 2: Cyberpunk', bg: 'linear-gradient(135deg, #090418, #2e1065)', btn: 'linear-gradient(90deg,#ff007f,#7928ca)', text: '#fff', ring: '#00f3ff' },
+      { id: 3, label: 'Variant 3: Gold & Emerald', bg: 'radial-gradient(circle at top, #064e3b, #021c15)', btn: '#d97706', text: '#fef3c7', ring: '#fbbf24' },
+      { id: 4, label: 'Variant 4: Earthy', bg: 'linear-gradient(180deg, #e7e5d8, #d6d3c0)', btn: '#586144', text: '#283618', ring: '#6b705c' },
+      { id: 5, label: 'Variant 5: Glassmorphism', bg: 'linear-gradient(135deg, #4f46e5, #9333ea, #0284c7)', btn: 'rgba(255,255,255,0.3)', text: '#fff', ring: '#fff' },
+      { id: 6, label: 'Variant 6: Abstract Art', bg: 'radial-gradient(circle at top right, #9a3412, #18181b)', btn: '#ea580c', text: '#fff7ed', ring: '#fb923c' },
+      { id: 7, label: 'Variant 7: Cosmic', bg: 'radial-gradient(ellipse at bottom, #1e1b4b, #030712)', btn: '#0284c7', text: '#f8fafc', ring: '#38bdf8' },
+      { id: 8, label: 'Variant 8: Pastel', bg: 'linear-gradient(135deg, #fbcfe8, #fef08a, #bae6fd)', btn: '#fb7185', text: '#1e293b', ring: '#f472b6' }
+    ];
+
+    async function fetchThemes() {
+      const bot_token = document.getElementById('botToken').value.trim();
+      const channel_id = document.getElementById('channelId').value.trim();
+      if (!bot_token || !channel_id) return alert('Pehle Bot Token aur Channel ID dalein!');
+
+      const btn = document.getElementById('fetchBtn');
+      btn.innerText = 'Fetching Channel DP & Name...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/fetch-channel', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bot_token, channel_id })
+        });
+        const data = await res.json();
+        btn.innerText = '⚡ Generate Preview >';
+        btn.disabled = false;
+
+        if (!data.success) return alert(data.error);
+        fetchedChannel = data;
+        renderThemes();
+        document.getElementById('themeSection').style.display = 'block';
+        document.getElementById('themeSection').scrollIntoView({ behavior: 'smooth' });
+      } catch (e) {
+        btn.innerText = '⚡ Generate Preview >';
+        btn.disabled = false;
+        alert('Network error!');
+      }
+    }
+
+    function renderThemes() {
+      const grid = document.getElementById('themesGrid');
+      grid.innerHTML = THEME_STYLES.map(t => `
+        <div>
+          <div class="phone-card ${selectedTheme === t.id ? 'selected' : ''}"
+               style="background:${t.bg}; color:${t.text};"
+               onclick="selectTheme(${t.id})">
+            <span class="tag">${selectedTheme === t.id ? '✓ Selected' : 'Click to Choose'}</span>
+            <img class="p-dp" src="${fetchedChannel.dp_url}" style="border-color:${t.ring};">
+            <div style="font-size:9px;letter-spacing:1.5px;opacity:0.75;">OFFICIAL CHANNEL</div>
+            <div class="p-title">${fetchedChannel.title}</div>
+            <div class="p-desc">Join for exclusive updates & daily alerts</div>
+            <div class="p-btn" style="background:${t.btn};">✈ Join the Channel →</div>
+          </div>
+          <div class="variant-label">${t.label}</div>
+        </div>
+      `).join('');
+    }
+
+    function selectTheme(id) {
+      selectedTheme = id;
+      renderThemes();
+    }
+
+    async function finalGenerate() {
+      const payload = {
+        license_key: document.getElementById('licenseKey').value,
+        slug: document.getElementById('pageSlug').value,
+        bot_token: document.getElementById('botToken').value,
+        channel_id: document.getElementById('channelId').value,
+        channel_title: fetchedChannel.title,
+        channel_username: fetchedChannel.username,
+        dp_url: fetchedChannel.dp_url,
+        pixel_id: document.getElementById('pixelId').value,
+        capi_token: document.getElementById('capiToken').value,
+        theme_id: selectedTheme
+      };
+
+      const btn = document.getElementById('finalBtn');
+      btn.innerText = 'Creating Your Server & Links...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/create-page', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        btn.innerText = '🚀 Final Generate Links & Password';
+        btn.disabled = false;
+
+        if (!data.success) return alert(data.error);
+
+        document.getElementById('outLanding').value = data.landing_url;
+        document.getElementById('outDash').value = data.dashboard_url;
+        document.getElementById('outPass').value = data.dashboard_pass;
+        document.getElementById('resultBox').style.display = 'block';
+        document.getElementById('resultBox').scrollIntoView({ behavior: 'smooth' });
+      } catch (e) {
+        btn.innerText = '🚀 Final Generate Links & Password';
+        btn.disabled = false;
+        alert('Error creating page');
+      }
+    }
+
+    function copyText(id) {
+      const el = document.getElementById(id);
+      el.select();
+      navigator.clipboard.writeText(el.value);
+      alert('Copied: ' + el.value);
+    }
+  </script>
+</body>
+</html>
