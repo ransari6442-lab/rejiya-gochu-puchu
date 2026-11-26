@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Learning Page Generator — Zero Fake Click SaaS</title>
+  <title>Learning Page Generator — Zero Fake Click</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
     body {
@@ -58,7 +58,6 @@
     }
     .btn-neon:active { transform: scale(0.98); }
 
-    /* 8 Themes Grid */
     #themeSection { width: 100%; max-width: 1050px; margin-top: 36px; display: none; }
     .sec-title { text-align: center; font-size: 22px; font-weight: 800; margin-bottom: 6px; color: #38bdf8; }
     .sec-sub { text-align: center; font-size: 13px; color: #94a3b8; margin-bottom: 22px; }
@@ -89,7 +88,6 @@
     }
     .variant-label { text-align: center; margin-top: 8px; font-size: 13px; font-weight: 700; color: #e2e8f0; }
 
-    /* Result Box */
     #resultBox {
       width: 100%; max-width: 520px; margin-top: 30px; display: none;
       background: #0f172a; border: 2px solid #22c55e; border-radius: 22px; padding: 24px;
@@ -116,11 +114,11 @@
 
   <div class="form-box">
     <div class="field">
-      <label>🔑 Activation Key (Buy Access)</label>
-      <input type="text" id="licenseKey" placeholder="Enter your Activation Key...">
+      <label>👤 Your Name / Telegram</label>
+      <input type="text" id="ownerName" placeholder="Enter your name...">
     </div>
     <div class="field">
-      <label>✏️ Custom Link Name (Slug)</label>
+      <label>✏️ Learning Page Link Name</label>
       <input type="text" id="pageSlug" placeholder="e.g. ziya-malik (no spaces)">
     </div>
     <div class="field">
@@ -128,7 +126,7 @@
       <input type="text" id="botToken" placeholder="Paste your Telegram bot token...">
     </div>
     <div class="field">
-      <label>✈️ Channel ID (Bot must be Admin)</label>
+      <label>✈️ Channel Link / Channel ID</label>
       <input type="text" id="channelId" placeholder="e.g. -1001234567890 or @username">
     </div>
     <div class="field">
@@ -139,22 +137,20 @@
       <label>🛡️ Meta CAPI Token</label>
       <input type="text" id="capiToken" placeholder="Enter your Meta CAPI Token...">
     </div>
-    <button id="fetchBtn" class="btn-neon" onclick="fetchThemes()">⚡ Generate Preview &gt;</button>
+    <button id="fetchBtn" class="btn-neon" onclick="fetchThemes()">⚡ Generate &gt;</button>
   </div>
 
-  <!-- 8 Themes Selection Section -->
   <div id="themeSection">
     <div class="sec-title">✨ Apni Pasand ki Theme Select Karein (8 Variants)</div>
     <div class="sec-sub">Channel DP aur Naam automatically fetch ho chuka hai — kisi ek card par click karein</div>
     <div class="themes-grid" id="themesGrid"></div>
     <div style="max-width:440px;margin:26px auto 0;">
-      <button id="finalBtn" class="btn-neon" onclick="finalGenerate()">🚀 Final Generate Links & Password</button>
+      <button id="finalBtn" class="btn-neon" onclick="finalGenerate()">🚀 Generate Custom Link & Dashboard</button>
     </div>
   </div>
 
-  <!-- Final Generated Links & Password -->
   <div id="resultBox">
-    <h3 style="color:#22c55e;margin-bottom:14px;">✅ Aapka Zero Fake Click System Ready Hai!</h3>
+    <h3 style="color:#22c55e;margin-bottom:14px;">✅ Aapka Zero Fake Click Link Ready Hai!</h3>
     <div class="res-item">
       <label>1️⃣ Custom Ad Landing Page Link (Meta Ads mein lagayein):</label>
       <div class="copy-row">
@@ -163,7 +159,7 @@
       </div>
     </div>
     <div class="res-item">
-      <label>2️⃣ Private Analytics Dashboard Link (Today, Yesterday, 30 Days & Ad Report):</label>
+      <label>2️⃣ Private Analytics Dashboard Link (Requests & Ad Report):</label>
       <div class="copy-row">
         <input type="text" id="outDash" readonly>
         <button class="copy-btn" onclick="copyText('outDash')">Copy</button>
@@ -208,7 +204,7 @@
           body: JSON.stringify({ bot_token, channel_id })
         });
         const data = await res.json();
-        btn.innerText = '⚡ Generate Preview >';
+        btn.innerText = '⚡ Generate >';
         btn.disabled = false;
 
         if (!data.success) return alert(data.error);
@@ -217,7 +213,7 @@
         document.getElementById('themeSection').style.display = 'block';
         document.getElementById('themeSection').scrollIntoView({ behavior: 'smooth' });
       } catch (e) {
-        btn.innerText = '⚡ Generate Preview >';
+        btn.innerText = '⚡ Generate >';
         btn.disabled = false;
         alert('Network error!');
       }
@@ -249,7 +245,7 @@
 
     async function finalGenerate() {
       const payload = {
-        license_key: document.getElementById('licenseKey').value,
+        owner_name: document.getElementById('ownerName').value,
         slug: document.getElementById('pageSlug').value,
         bot_token: document.getElementById('botToken').value,
         channel_id: document.getElementById('channelId').value,
@@ -262,7 +258,7 @@
       };
 
       const btn = document.getElementById('finalBtn');
-      btn.innerText = 'Creating Your Server & Links...';
+      btn.innerText = 'Creating Your Link & Dashboard...';
       btn.disabled = true;
 
       try {
@@ -271,7 +267,7 @@
           body: JSON.stringify(payload)
         });
         const data = await res.json();
-        btn.innerText = '🚀 Final Generate Links & Password';
+        btn.innerText = '🚀 Generate Custom Link & Dashboard';
         btn.disabled = false;
 
         if (!data.success) return alert(data.error);
@@ -282,7 +278,7 @@
         document.getElementById('resultBox').style.display = 'block';
         document.getElementById('resultBox').scrollIntoView({ behavior: 'smooth' });
       } catch (e) {
-        btn.innerText = '🚀 Final Generate Links & Password';
+        btn.innerText = '🚀 Generate Custom Link & Dashboard';
         btn.disabled = false;
         alert('Error creating page');
       }
