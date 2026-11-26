@@ -1,10 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
 const THEMES = {
   1: { name: 'Modern Red', bg: 'radial-gradient(circle at top, #5c0a14, #0d0204 80%)', card: 'rgba(30,5,10,0.85)', ring: '#ff2a4b', btn: 'linear-gradient(90deg, #ff1e42, #b8001f)', text: '#fff', accent: '#ff4d6d' },
   2: { name: 'Cyberpunk', bg: 'linear-gradient(135deg, #090418 0%, #1a0933 50%, #05020d 100%)', card: 'rgba(18,8,38,0.88)', ring: '#00f3ff', btn: 'linear-gradient(90deg, #ff007f, #7928ca)', text: '#fff', accent: '#00f3ff' },
@@ -18,14 +11,26 @@ const THEMES = {
 
 export default async function handler(req, res) {
   const { slug, webhook, action } = req.query;
+  const SB_URL = (process.env.SUPABASE_URL || '').trim();
+  const SB_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
-  const { data: page, error } = await supabase
-    .from('saas_pages')
-    .select('*')
-    .eq('slug', slug)
-    .single();
+  async function sbFetch(path, options = {}) {
+    const r = await fetch(`${SB_URL}/rest/v1/${path}`, {
+      ...options,
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': `Bearer ${SB_KEY}`,
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      }
+    });
+    return r.json();
+  }
 
-  if (error || !page) {
+  const pages = await sbFetch(`saas_pages?slug=eq.${encodeURIComponent(slug || '')}&select=*`);
+  const page = Array.isArray(pages) ? pages[0] : null;
+
+  if (!page) {
     return res.status(404).send('<h2 style="font-family:sans-serif;text-align:center;margin-top:50px;">404 - Page Not Found</h2>');
   }
 
@@ -41,13 +46,16 @@ export default async function handler(req, res) {
       const rawName = joinReq.invite_link?.name || 'Direct';
       const adName = rawName.startsWith('AD:') ? rawName.replace('AD:', '') : rawName;
 
-      await supabase.from('saas_requests').insert([{
-        page_slug: slug,
-        ad_name: adName,
-        user_telegram_id: user.id,
-        user_full_name: [user.first_name, user.last_name].filter(Boolean).join(' '),
-        user_username: user.username ? `@${user.username}` : 'No Username'
-      }]);
+      await sbFetch('saas_requests', {
+        method: 'POST',
+        body: JSON.stringify([{
+          page_slug: slug,
+          ad_name: adName,
+          user_telegram_id: user.id,
+          user_full_name: [user.first_name, user.last_name].filter(Boolean).join(' '),
+          user_username: user.username ? `@${user.username}` : 'No Username'
+        }])
+      });
 
       try {
         await fetch(`https://graph.facebook.com/v19.0/${page.pixel_id}/events?access_token=${page.capi_token}`, {
@@ -58,13 +66,8 @@ export default async function handler(req, res) {
               event_name: 'Lead',
               event_time: Math.floor(Date.now() / 1000),
               action_source: 'website',
-              user_data: {
-                external_id: [String(user.id)]
-              },
-              custom_data: {
-                ad_name: adName,
-                channel: page.channel_title
-              }
+              user_data: { external_id: [String(user.id)] },
+              custom_data: { ad_name: adName, channel: page.channel_title }
             }]
           })
         });
@@ -115,93 +118,17 @@ export default async function handler(req, res) {
   </script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-    body {
-      min-height: 100vh;
-      background: ${t.bg};
-      color: ${t.text};
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .container {
-      width: 100%;
-      max-width: 400px;
-      background: ${t.card};
-      backdrop-filter: blur(16px);
-      border: 1.5px solid ${t.ring}55;
-      border-radius: 28px;
-      padding: 36px 24px;
-      text-align: center;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.45);
-    }
-    .dp-wrap {
-      width: 124px;
-      height: 124px;
-      margin: 0 auto 20px;
-      border-radius: 50%;
-      padding: 4px;
-      border: 3px solid ${t.ring};
-      box-shadow: 0 0 25px ${t.ring}88;
-    }
-    .dp-wrap img {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      object-fit: cover;
-    }
-    .badge {
-      font-size: 11px;
-      letter-spacing: 2.5px;
-      text-transform: uppercase;
-      opacity: 0.75;
-      margin-bottom: 6px;
-    }
-    h1 {
-      font-size: 26px;
-      font-weight: 800;
-      margin-bottom: 10px;
-      letter-spacing: 0.5px;
-    }
-    .sub {
-      font-size: 14px;
-      opacity: 0.85;
-      line-height: 1.5;
-      margin-bottom: 24px;
-    }
-    .wave {
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      margin-bottom: 26px;
-    }
-    .wave span {
-      width: 4px;
-      background: ${t.accent};
-      border-radius: 4px;
-      animation: pulse 1.2s infinite ease-in-out;
-    }
+    body { min-height: 100vh; background: ${t.bg}; color: ${t.text}; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .container { width: 100%; max-width: 400px; background: ${t.card}; backdrop-filter: blur(16px); border: 1.5px solid ${t.ring}55; border-radius: 28px; padding: 36px 24px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.45); }
+    .dp-wrap { width: 124px; height: 124px; margin: 0 auto 20px; border-radius: 50%; padding: 4px; border: 3px solid ${t.ring}; box-shadow: 0 0 25px ${t.ring}88; }
+    .dp-wrap img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+    .badge { font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; opacity: 0.75; margin-bottom: 6px; }
+    h1 { font-size: 26px; font-weight: 800; margin-bottom: 10px; letter-spacing: 0.5px; }
+    .sub { font-size: 14px; opacity: 0.85; line-height: 1.5; margin-bottom: 24px; }
+    .wave { height: 24px; display: flex; align-items: center; justify-content: center; gap: 4px; margin-bottom: 26px; }
+    .wave span { width: 4px; background: ${t.accent}; border-radius: 4px; animation: pulse 1.2s infinite ease-in-out; }
     @keyframes pulse { 0%, 100% { height: 6px; } 50% { height: 22px; } }
-    .join-btn {
-      width: 100%;
-      padding: 16px 20px;
-      border: none;
-      border-radius: 50px;
-      background: ${t.btn};
-      color: #fff;
-      font-size: 17px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      transition: transform 0.2s;
-    }
-    .join-btn:active { transform: scale(0.97); }
+    .join-btn { width: 100%; padding: 16px 20px; border: none; border-radius: 50px; background: ${t.btn}; color: #fff; font-size: 17px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
     .status { font-size: 12px; margin-top: 16px; opacity: 0.85; }
     .status b { color: #22c55e; }
     .perks { margin-top: 18px; font-size: 13px; opacity: 0.85; line-height: 1.9; }
@@ -210,9 +137,7 @@ export default async function handler(req, res) {
 </head>
 <body>
   <div class="container">
-    <div class="dp-wrap">
-      <img src="${page.dp_url}" alt="Channel DP">
-    </div>
+    <div class="dp-wrap"><img src="${page.dp_url}" alt="Channel DP"></div>
     <div class="badge">OFFICIAL TELEGRAM CHANNEL</div>
     <h1>${page.channel_title}</h1>
     <p class="sub">Daily premium updates, insights & exclusive community access.</p>
@@ -222,15 +147,9 @@ export default async function handler(req, res) {
       <span style="animation-delay:0.4s"></span><span style="animation-delay:0.1s"></span>
       <span style="animation-delay:0.3s"></span>
     </div>
-    <button id="joinBtn" class="join-btn" onclick="handleJoin()">
-      <span>✈ Join the Channel →</span>
-    </button>
+    <button id="joinBtn" class="join-btn" onclick="handleJoin()"><span>✈ Join the Channel →</span></button>
     <div class="status">Status: <b>Ready</b> • opens in Telegram</div>
-    <div class="perks">
-      ✓ Free to join<br>
-      ✓ 1 tap — opens in Telegram<br>
-      ✓ Leave anytime
-    </div>
+    <div class="perks">✓ Free to join<br>✓ 1 tap — opens in Telegram<br>✓ Leave anytime</div>
     <div class="footer">© 2026 ${page.channel_title} • Not affiliated with Telegram</div>
   </div>
 
@@ -239,7 +158,6 @@ export default async function handler(req, res) {
     ['mousemove', 'touchstart', 'scroll', 'click'].forEach(ev => {
       window.addEventListener(ev, () => { humanVerified = true; }, { once: true });
     });
-
     const params = new URLSearchParams(window.location.search);
     const adName = params.get('ad') || 'Direct';
 
@@ -247,24 +165,15 @@ export default async function handler(req, res) {
       const btn = document.getElementById('joinBtn');
       btn.innerHTML = '<span>Connecting to Telegram...</span>';
       btn.disabled = true;
-
       try {
         const res = await fetch('/api/page-handler?slug=${slug}&action=get_invite', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ad_name: adName, human: humanVerified })
         });
         const data = await res.json();
-        if (data.invite_link) {
-          window.location.href = data.invite_link;
-        } else {
-          btn.innerHTML = '<span>Try Again</span>';
-          btn.disabled = false;
-        }
-      } catch (e) {
-        btn.innerHTML = '<span>✈ Join the Channel →</span>';
-        btn.disabled = false;
-      }
+        if (data.invite_link) window.location.href = data.invite_link;
+        else { btn.innerHTML = '<span>Try Again</span>'; btn.disabled = false; }
+      } catch (e) { btn.innerHTML = '<span>✈ Join the Channel →</span>'; btn.disabled = false; }
     }
   </script>
 </body>
