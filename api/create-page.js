@@ -1,12 +1,22 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const SB_URL = (process.env.SUPABASE_URL || '').trim();
+  const SB_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+
+  async function sbFetch(path, options = {}) {
+    const r = await fetch(`${SB_URL}/rest/v1/${path}`, {
+      ...options,
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': `Bearer ${SB_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
+        ...(options.headers || {})
+      }
+    });
+    return r.json();
+  }
 
   const {
     owner_name,
@@ -18,13 +28,12 @@ export default async function handler(req, res) {
     pixel_id,
     capi_token,
     theme_id
-  } = req.body;
+  } = req.body || {};
 
   if (!bot_token || !channel_id || !pixel_id || !capi_token) {
     return res.status(400).json({ error: 'सभी फ़ील्ड भरना अनिवार्य है!' });
   }
 
-  // Channel ke username ya title se automatic clean link banayein
   const baseName = (channel_username && channel_username !== 'Private Channel')
     ? channel_username.replace('@', '')
     : (channel_title || 'channel');
@@ -33,14 +42,8 @@ export default async function handler(req, res) {
   if (cleanSlug.length < 3) cleanSlug = 'channel';
 
   try {
-    // Agar same naam ka link pehle se bana ho to aage random number jod dein
-    const { data: existingPage } = await supabase
-      .from('saas_pages')
-      .select('slug')
-      .eq('slug', cleanSlug)
-      .single();
-
-    if (existingPage) {
+    const existing = await sbFetch(`saas_pages?slug=eq.${encodeURIComponent(cleanSlug)}&select=slug`);
+    if (Array.isArray(existing) && existing.length > 0) {
       cleanSlug = `${cleanSlug}-${Math.floor(100 + Math.random() * 900)}`;
     }
 
@@ -48,29 +51,35 @@ export default async function handler(req, res) {
     const dashboardPass = `RJ-${randomPin}`;
     const autoKey = `AUTO-${Date.now()}`;
 
-    await supabase.from('saas_keys').insert([{
-      key_code: autoKey,
-      buyer_name: (owner_name || channel_title || 'User').trim(),
-      assigned_slug: cleanSlug,
-      status: 'active'
-    }]);
+    await sbFetch('saas_keys', {
+      method: 'POST',
+      body: JSON.stringify([{
+        key_code: autoKey,
+        buyer_name: (owner_name || channel_title || 'User').trim(),
+        assigned_slug: cleanSlug,
+        status: 'active'
+      }])
+    });
 
-    const { error: insertErr } = await supabase.from('saas_pages').insert([{
-      slug: cleanSlug,
-      license_key: autoKey,
-      bot_token: bot_token.trim(),
-      channel_id: channel_id.trim(),
-      channel_title,
-      channel_username,
-      dp_url,
-      pixel_id: pixel_id.trim(),
-      capi_token: capi_token.trim(),
-      theme_id: Number(theme_id) || 1,
-      dashboard_pass: dashboardPass
-    }]);
+    const insertRes = await sbFetch('saas_pages', {
+      method: 'POST',
+      body: JSON.stringify([{
+        slug: cleanSlug,
+        license_key: autoKey,
+        bot_token: bot_token.trim(),
+        channel_id: channel_id.trim(),
+        channel_title,
+        channel_username,
+        dp_url,
+        pixel_id: pixel_id.trim(),
+        capi_token: capi_token.trim(),
+        theme_id: Number(theme_id) || 1,
+        dashboard_pass: dashboardPass
+      }])
+    });
 
-    if (insertErr) {
-      return res.status(500).json({ error: 'पेज सेव करने में समस्या आई: ' + insertErr.message });
+    if (insertRes && insertRes.message) {
+      return res.status(500).json({ error: 'Database Error: ' + insertRes.message });
     }
 
     const host = req.headers.host;
