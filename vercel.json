@@ -1,1 +1,8 @@
-
+{
+  "rewrites": [
+    { "source": "/p/:slug", "destination": "/api/page-handler?slug=:slug" },
+    { "source": "/webhook/:slug", "destination": "/api/page-handler?slug=:slug&webhook=1" },
+    { "source": "/dash/:slug", "destination": "/api/dash-admin?slug=:slug" },
+    { "source": "/master-admin", "destination": "/api/dash-admin?admin=1" }
+  ]
+}
